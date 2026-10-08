@@ -4457,6 +4457,11 @@ const css = `
   .locentra-app:not(:has(.home-landing)) .detail-card h1 {
     color: #132a39;
     font-weight: 740;
+    font-size: clamp(1.8rem, 3.2vw, 2.75rem);
+    line-height: 1.12;
+    letter-spacing: -.05em;
+    overflow-wrap: anywhere;
+    text-wrap: pretty;
   }
 
   .locentra-app:not(:has(.home-landing)) .metric-box {
@@ -4563,6 +4568,161 @@ const css = `
     border-radius: 99px;
     background: #edf3ef;
     color: #426b59;
+  }
+
+  .locentra-app:not(:has(.home-landing)) .retailer-dashboard-sections {
+    display: grid;
+    gap: 22px;
+  }
+
+  .locentra-app:not(:has(.home-landing)) .retailer-requirements-section,
+  .locentra-app:not(:has(.home-landing)) .retailer-matches-section {
+    min-width: 0;
+    padding: 24px;
+  }
+
+  .locentra-app:not(:has(.home-landing)) .retailer-requirements-section > p,
+  .locentra-app:not(:has(.home-landing)) .retailer-matches-section > p {
+    margin: 0 0 16px;
+  }
+
+  .locentra-app:not(:has(.home-landing)) .retailer-matches-section {
+    background: linear-gradient(145deg, #fff, #f7faf8);
+    border-color: #dce8df;
+  }
+
+  .locentra-app:not(:has(.home-landing)) .retailer-match-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+    margin-top: 20px;
+  }
+
+  .locentra-app:not(:has(.home-landing)) .retailer-match-card {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    padding: 18px;
+    border: 1px solid #e2e9e5;
+    border-radius: 14px;
+    background: #fff;
+    box-shadow: 0 8px 22px rgba(19, 42, 57, .045);
+  }
+
+  .locentra-app:not(:has(.home-landing)) .retailer-match-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+
+  .locentra-app:not(:has(.home-landing)) .retailer-match-type,
+  .locentra-app:not(:has(.home-landing)) .retailer-match-score {
+    display: inline-flex;
+    align-items: center;
+    max-width: 100%;
+    border-radius: 999px;
+    padding: 6px 10px;
+    font-size: .7rem;
+    font-weight: 750;
+    line-height: 1.25;
+  }
+
+  .locentra-app:not(:has(.home-landing)) .retailer-match-type {
+    overflow-wrap: anywhere;
+    background: #f1f5f2;
+    color: #4c6260;
+  }
+
+  .locentra-app:not(:has(.home-landing)) .retailer-match-score {
+    flex: 0 0 auto;
+    background: #eaf4ec;
+    color: #34704c;
+  }
+
+  .locentra-app:not(:has(.home-landing)) .retailer-match-card h4 {
+    margin: 0;
+    color: #1c3542;
+    font-size: 1rem;
+    line-height: 1.4;
+    letter-spacing: -.02em;
+    overflow-wrap: anywhere;
+  }
+
+  .locentra-app:not(:has(.home-landing)) .retailer-match-location {
+    margin: 6px 0 16px;
+    color: #687b85;
+    font-size: .81rem;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+  }
+
+  .locentra-app:not(:has(.home-landing)) .retailer-match-description {
+    margin: -7px 0 14px;
+    color: #536970;
+    font-size: .77rem;
+    line-height: 1.55;
+    overflow-wrap: anywhere;
+  }
+
+  .locentra-app:not(:has(.home-landing)) .retailer-match-metrics {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    padding: 14px 0;
+    border-top: 1px solid #edf1ee;
+    border-bottom: 1px solid #edf1ee;
+  }
+
+  .locentra-app:not(:has(.home-landing)) .retailer-match-metrics > div {
+    min-width: 0;
+  }
+
+  .locentra-app:not(:has(.home-landing)) .retailer-match-metrics span,
+  .locentra-app:not(:has(.home-landing)) .retailer-match-metrics strong {
+    display: block;
+    overflow-wrap: anywhere;
+  }
+
+  .locentra-app:not(:has(.home-landing)) .retailer-match-metrics span {
+    margin-bottom: 4px;
+    color: #75858a;
+    font-size: .69rem;
+  }
+
+  .locentra-app:not(:has(.home-landing)) .retailer-match-metrics strong {
+    color: #1c3542;
+    font-size: .8rem;
+  }
+
+  .locentra-app:not(:has(.home-landing)) .retailer-match-reasons {
+    flex: 1 0 auto;
+    margin: 13px 0 16px;
+    color: #536970;
+    font-size: .76rem;
+    line-height: 1.55;
+    overflow-wrap: anywhere;
+  }
+
+  .locentra-app:not(:has(.home-landing)) .retailer-match-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin: auto 0 0;
+  }
+
+  .locentra-app:not(:has(.home-landing)) .retailer-match-actions .btn {
+    min-width: 0;
+    padding: 9px 8px;
+    text-align: center;
+    white-space: normal;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+  }
+
+  .locentra-app:not(:has(.home-landing)) .retailer-match-actions .btn:first-child {
+    grid-column: 1 / -1;
   }
 
   .locentra-app:not(:has(.home-landing)) .form-panel {
@@ -4910,6 +5070,10 @@ const css = `
       min-width: 0;
     }
 
+    .locentra-app:not(:has(.home-landing)) .retailer-match-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
     .locentra-app:not(:has(.home-landing)) .dashboard-grid > *,
     .locentra-app:not(:has(.home-landing)) .sidebar,
     .locentra-app:not(:has(.home-landing)) .content-panel {
@@ -5037,6 +5201,16 @@ const css = `
 
     .locentra-app:not(:has(.home-landing)) .two-col {
       grid-template-columns: 1fr;
+    }
+
+    .locentra-app:not(:has(.home-landing)) .retailer-match-grid {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 12px;
+    }
+
+    .locentra-app:not(:has(.home-landing)) .retailer-requirements-section,
+    .locentra-app:not(:has(.home-landing)) .retailer-matches-section {
+      padding: 19px 16px;
     }
 
     .locentra-app:not(:has(.home-landing)) .list-row {
@@ -8027,10 +8201,10 @@ function RetailerDashboardPage() {
               </div>
             </div>
 
-            <div className="two-col">
-              <div className="feature-card">
+            <div className="retailer-dashboard-sections">
+              <section className="feature-card retailer-requirements-section">
                 <div className="section-header" style={{ marginBottom: 14 }}>
-                  <h3 style={{ margin: 0 }}>My requirements</h3>
+                  <h3 style={{ margin: 0 }}>My Requirements</h3>
                   <Link to="/create-requirement" className="link">View all</Link>
                 </div>
                 <p>Requirements you’ve submitted while searching for commercial property.</p>
@@ -8051,11 +8225,11 @@ function RetailerDashboardPage() {
                     </div>
                   ))}
                 </div>
-              </div>
+              </section>
 
-              <div className="feature-card">
+              <section className="feature-card retailer-matches-section">
                 <div className="section-header" style={{ marginBottom: 14 }}>
-                  <h3 style={{ margin: 0 }}>Matching properties</h3>
+                  <h3 style={{ margin: 0 }}>Matching Properties</h3>
                   <Link to="/properties" className="link">Explore</Link>
                 </div>
                 <p>Properties scored against your submitted requirement preferences.</p>
@@ -8064,60 +8238,79 @@ function RetailerDashboardPage() {
                 {!matchesLoading && !dashboardError && selectedRequirement && matches.length === 0 && (
                   <p>No matching properties found for your current requirement.</p>
                 )}
-                <div className="list-stack">
+                <div className="retailer-match-grid">
                   {matches.slice(0, 4).map(({ property, matchScore, matchingReasons }) => (
-                    <div className="list-row" key={property._id}>
-                      <div>
-                        <strong>{property.title}</strong>
-                        <small>{property.propertyType} · {property.location}, {property.city} · {property.areaSqFt.toLocaleString()} sq.ft. · ₹{property.monthlyRent.toLocaleString()}/month</small>
-                        <small>Parking: {property.parking ? 'Available' : 'Unavailable'} · Foot traffic: {property.footTraffic}</small>
-                        <small>{matchingReasons.join(' ')}</small>
-                        <div className="detail-actions">
-                          <Link to={`/properties/${property._id}`} className="btn btn-secondary btn-small">View details</Link>
-                          <button type="button" className="btn btn-secondary btn-small" onClick={async () => {
-                            try {
-                              if (savedPropertyIds.includes(property._id)) {
-                                await removeFavorite(property._id);
-                                setSavedPropertyIds((current) => current.filter((id) => id !== property._id));
-                                setSavedCount((count) => Math.max(0, count - 1));
-                              } else {
-                                await saveFavorite(property._id);
-                                const latestFavorites = await getFavorites();
-                                setSavedPropertyIds(latestFavorites.favorites.map((favorite) => favorite.property?._id).filter(Boolean));
-                                setSavedCount(latestFavorites.favorites.length);
-                              }
-                            } catch (error) {
-                              setDashboardError(error.message || 'Unable to save property.');
-                            }
-                          }}>{savedPropertyIds.includes(property._id) ? 'Saved' : 'Save Property'}</button>
-                          <button type="button" className="btn btn-secondary btn-small" onClick={async () => {
-                            if (contactedPropertyIds.includes(property._id)) {
-                              setContactFeedback('You have already sent a request for this property.');
-                              return;
-                            }
-                            try {
-                              await createContactRequest(property._id, selectedRequirement?._id);
-                              const latestRequests = await getContactRequests();
-                              setContactRequestCount(latestRequests.requests.length);
-                              setContactedPropertyIds(latestRequests.requests.map((request) => request.property?._id).filter(Boolean));
-                              setDashboardError('');
-                              setContactFeedback('Your contact request was sent to the representative.');
-                            } catch (error) {
-                              if (error.message?.includes('already sent')) {
-                                setContactedPropertyIds((current) => [...current, property._id]);
-                                setContactFeedback(error.message);
-                              } else {
-                                setDashboardError(error.message || 'Unable to contact representative.');
-                              }
-                            }
-                          }} disabled={contactedPropertyIds.includes(property._id)}>{contactedPropertyIds.includes(property._id) ? 'Request Sent' : 'Contact Representative'}</button>
+                    <article className="retailer-match-card" key={property._id}>
+                      <div className="retailer-match-card-header">
+                        <span className="retailer-match-type">{property.propertyType}</span>
+                        <span className="retailer-match-score">{matchScore}% Match</span>
+                      </div>
+                      <h4>{property.title}</h4>
+                      <p className="retailer-match-location">{property.location}, {property.city}</p>
+                      {property.description && <p className="retailer-match-description">{property.description}</p>}
+                      <div className="retailer-match-metrics">
+                        <div>
+                          <span>Monthly rent</span>
+                          <strong>₹{property.monthlyRent.toLocaleString()}</strong>
+                        </div>
+                        <div>
+                          <span>Area</span>
+                          <strong>{property.areaSqFt.toLocaleString()} sq.ft.</strong>
+                        </div>
+                        <div>
+                          <span>Parking</span>
+                          <strong>{property.parking ? 'Available' : 'Unavailable'}</strong>
+                        </div>
+                        <div>
+                          <span>Foot traffic</span>
+                          <strong>{property.footTraffic}</strong>
                         </div>
                       </div>
-                      <span className="label">{matchScore}%</span>
-                    </div>
+                      <p className="retailer-match-reasons">{matchingReasons.join(' ')}</p>
+                      <div className="detail-actions retailer-match-actions">
+                        <Link to={`/properties/${property._id}`} className="btn btn-primary btn-small">View Property</Link>
+                        <button type="button" className="btn btn-secondary btn-small" onClick={async () => {
+                          try {
+                            if (savedPropertyIds.includes(property._id)) {
+                              await removeFavorite(property._id);
+                              setSavedPropertyIds((current) => current.filter((id) => id !== property._id));
+                              setSavedCount((count) => Math.max(0, count - 1));
+                            } else {
+                              await saveFavorite(property._id);
+                              const latestFavorites = await getFavorites();
+                              setSavedPropertyIds(latestFavorites.favorites.map((favorite) => favorite.property?._id).filter(Boolean));
+                              setSavedCount(latestFavorites.favorites.length);
+                            }
+                          } catch (error) {
+                            setDashboardError(error.message || 'Unable to save property.');
+                          }
+                        }}>{savedPropertyIds.includes(property._id) ? 'Saved' : 'Save Property'}</button>
+                        <button type="button" className="btn btn-secondary btn-small" onClick={async () => {
+                          if (contactedPropertyIds.includes(property._id)) {
+                            setContactFeedback('You have already sent a request for this property.');
+                            return;
+                          }
+                          try {
+                            await createContactRequest(property._id, selectedRequirement?._id);
+                            const latestRequests = await getContactRequests();
+                            setContactRequestCount(latestRequests.requests.length);
+                            setContactedPropertyIds(latestRequests.requests.map((request) => request.property?._id).filter(Boolean));
+                            setDashboardError('');
+                            setContactFeedback('Your contact request was sent to the representative.');
+                          } catch (error) {
+                            if (error.message?.includes('already sent')) {
+                              setContactedPropertyIds((current) => [...current, property._id]);
+                              setContactFeedback(error.message);
+                            } else {
+                              setDashboardError(error.message || 'Unable to contact representative.');
+                            }
+                          }
+                        }} disabled={contactedPropertyIds.includes(property._id)}>{contactedPropertyIds.includes(property._id) ? 'Request Sent' : 'Contact Representative'}</button>
+                      </div>
+                    </article>
                   ))}
                 </div>
-              </div>
+              </section>
             </div>
             {contactFeedback && <p className="auth-feedback auth-feedback-success" role="status">{contactFeedback} <Link to="/contact-requests">View requests</Link></p>}
             <div className="feature-card" style={{ marginTop: 18 }}>
