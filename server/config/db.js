@@ -1,12 +1,18 @@
 const mongoose = require("mongoose");
 
 const connectDB = async () => {
+  const uri = process.env.MONGODB_URI?.trim();
+
+  if (!uri) {
+    throw new Error("MONGODB_URI is not configured.");
+  }
+
   try {
-    await mongoose.connect("mongodb://127.0.0.1:27017/locentra");
-    console.log("MongoDB connected successfully");
+    await mongoose.connect(uri);
+    console.log("MongoDB Atlas connected successfully");
   } catch (error) {
     console.error("MongoDB connection failed:", error.message);
-    process.exit(1);
+    throw error;
   }
 };
 
