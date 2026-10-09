@@ -1,5 +1,11 @@
+
+const API_BASE_URL = (
+  import.meta.env.VITE_API_URL ||
+  "https://commercial-real-estate-mvp.onrender.com"
+).replace(/\/+$/, "");
+
 export async function checkBackendHealth() {
-  const response = await fetch("http://localhost:5000/api/health");
+  const response = await fetch(`${API_BASE_URL}/api/health`);
 
   if (!response.ok) {
     throw new Error("Backend health check failed");
@@ -10,8 +16,9 @@ export async function checkBackendHealth() {
 
 async function postAuthRequest(endpoint, payload) {
   let response;
+
   try {
-    response = await fetch(`http://localhost:5000/api/auth/${endpoint}`, {
+    response = await fetch(`${API_BASE_URL}/api/auth/${endpoint}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -19,10 +26,13 @@ async function postAuthRequest(endpoint, payload) {
       body: JSON.stringify(payload),
     });
   } catch {
-    throw new Error("Unable to reach Locentra. Check that the backend is running.");
+    throw new Error(
+      "Unable to reach Locentra. Check your internet connection and backend."
+    );
   }
 
   const result = await response.json();
+
   if (!response.ok || !result.success) {
     throw new Error(result.message || "Authentication request failed.");
   }
@@ -39,15 +49,21 @@ export function loginAccount(credentials) {
 }
 
 function getStoredToken() {
-  const storedAuthentication = window.localStorage.getItem("locentraAuth")
-    || window.sessionStorage.getItem("locentraAuth");
+  const storedAuthentication =
+    window.localStorage.getItem("locentraAuth") ||
+    window.sessionStorage.getItem("locentraAuth");
+
   if (!storedAuthentication) {
     throw new Error("Please sign in to continue.");
   }
 
   try {
     const { token } = JSON.parse(storedAuthentication);
-    if (!token) throw new Error("Missing token");
+
+    if (!token) {
+      throw new Error("Missing token");
+    }
+
     return token;
   } catch {
     throw new Error("Your session is invalid. Please sign in again.");
@@ -57,23 +73,28 @@ function getStoredToken() {
 async function requestAuthenticatedApi(path, options = {}) {
   const token = getStoredToken();
   let response;
+
   try {
-    response = await fetch(`http://localhost:5000/api/${path}`, {
+    response = await fetch(`${API_BASE_URL}/api/${path}`, {
       ...options,
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
         ...options.headers,
+        Authorization: `Bearer ${token}`,
       },
     });
   } catch {
-    throw new Error("Unable to reach Locentra. Check that the backend is running.");
+    throw new Error(
+      "Unable to reach Locentra. Check your internet connection and backend."
+    );
   }
 
   const result = await response.json();
+
   if (!response.ok || !result.success) {
     throw new Error(result.message || "The request could not be completed.");
   }
+
   return result;
 }
 
@@ -89,16 +110,22 @@ export function getRequirements() {
 }
 
 export function getRequirementMatches(requirementId) {
-  return requestAuthenticatedApi(`requirements/${encodeURIComponent(requirementId)}/matches`);
+  return requestAuthenticatedApi(
+    `requirements/${encodeURIComponent(requirementId)}/matches`
+  );
 }
 
 export async function getProperties(type = "All") {
-  const query = type && type !== "All" ? `?type=${encodeURIComponent(type)}` : "";
-  const response = await fetch(`http://localhost:5000/api/properties${query}`);
+  const query =
+    type && type !== "All" ? `?type=${encodeURIComponent(type)}` : "";
+
+  const response = await fetch(`${API_BASE_URL}/api/properties${query}`);
   const result = await response.json();
+
   if (!response.ok || !result.success) {
     throw new Error(result.message || "Unable to load properties.");
   }
+
   return result;
 }
 
@@ -114,11 +141,16 @@ export function createProperty(property) {
 }
 
 export async function getProperty(propertyId) {
-  const response = await fetch(`http://localhost:5000/api/properties/${encodeURIComponent(propertyId)}`);
+  const response = await fetch(
+    `${API_BASE_URL}/api/properties/${encodeURIComponent(propertyId)}`
+  );
+
   const result = await response.json();
+
   if (!response.ok || !result.success) {
     throw new Error(result.message || "Unable to load this property.");
   }
+
   return result;
 }
 
@@ -127,7 +159,9 @@ export function getFavorites() {
 }
 
 export function getFavoriteStatus(propertyId) {
-  return requestAuthenticatedApi(`favorites/${encodeURIComponent(propertyId)}`);
+  return requestAuthenticatedApi(
+    `favorites/${encodeURIComponent(propertyId)}`
+  );
 }
 
 export function saveFavorite(propertyId) {
@@ -154,7 +188,10 @@ export function getReceivedContactRequests() {
 export function createContactRequest(propertyId, requirementId) {
   return requestAuthenticatedApi("contact-requests", {
     method: "POST",
-    body: JSON.stringify({ propertyId, ...(requirementId ? { requirementId } : {}) }),
+    body: JSON.stringify({
+      propertyId,
+      ...(requirementId ? { requirementId } : {}),
+    }),
   });
 }
 
