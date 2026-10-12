@@ -8,7 +8,19 @@ async function getFavorites(req, res, next) {
       .populate("property")
       .sort({ createdAt: -1 })
       .lean();
-    return res.json({ success: true, favorites });
+    const availableFavorites = favorites.filter((favorite) => favorite.property);
+    const unavailableFavoriteIds = favorites
+      .filter((favorite) => !favorite.property)
+      .map((favorite) => favorite._id);
+
+    if (unavailableFavoriteIds.length) {
+      await Favorite.deleteMany({
+        retailer: req.user.id,
+        _id: { $in: unavailableFavoriteIds },
+      });
+    }
+
+    return res.json({ success: true, favorites: availableFavorites });
   } catch (error) {
     return next(error);
   }

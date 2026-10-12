@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { Routes, Route, Link, NavLink, useParams, useNavigate, useLocation } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
+import { Routes, Route, Link, NavLink, Navigate, useParams, useNavigate, useLocation } from 'react-router-dom';
 import {
   checkBackendHealth,
+  clearAuthentication,
   createContactRequest,
   createProperty,
   createRequirement,
@@ -15,6 +16,8 @@ import {
   getProperty,
   getRequirements,
   getRequirementMatches,
+  getRequirementMatchesSummary,
+  getAuthenticatedRole,
   loginAccount,
   removeFavorite,
   saveFavorite,
@@ -806,6 +809,15 @@ const css = `
     border-radius: 12px;
     color: var(--locentra-text-soft);
     font-weight: 600;
+  }
+
+  .side-logout {
+    width: 100%;
+    border: 0;
+    background: transparent;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
   }
 
   .side-link.active {
@@ -4330,7 +4342,7 @@ const css = `
   }
 
   .locentra-app:not(:has(.home-landing)) .chip {
-    min-height: 39px;
+    min-height: 44px;
     border-color: #e0e8e3;
     background: #fff;
     color: #405761;
@@ -5114,9 +5126,12 @@ const css = `
     .locentra-app:not(:has(.home-landing)) .main-nav {
       order: 3;
       width: 100%;
-      justify-content: space-between;
-      gap: 8px;
+      justify-content: flex-start;
+      gap: 16px;
+      flex-wrap: nowrap;
+      overflow-x: auto;
       padding: 7px 0 3px;
+      scrollbar-width: thin;
     }
 
     .locentra-app:not(:has(.home-landing)) .main-nav a {
@@ -7031,13 +7046,13 @@ const css = `
       .register-aside-pin svg { width: 15px; height: 15px; }
       .register-aside-float { right: 4px; bottom: 6px; gap: 5px; padding: 5px 6px; }
       .register-aside-float > svg { width: 14px; height: 14px; }
-      .register-aside-float small { font-size: .35rem; }
-      .register-aside-float strong { font-size: .49rem; }
+      .register-aside-float small { font-size: .6rem; }
+      .register-aside-float strong { font-size: .65rem; }
       .register-aside-copy { padding: 4px 2px; }
-      .register-aside-copy .eyebrow { margin-bottom: 6px; font-size: .49rem; }
+      .register-aside-copy .eyebrow { margin-bottom: 6px; font-size: .65rem; }
       .register-aside-copy h2 { font-size: 1.13rem; }
       .register-aside-copy > p:last-child { margin-top: 6px; font-size: .64rem; }
-      .register-aside-step { grid-column: 1 / -1; padding-top: 8px; font-size: .57rem; }
+      .register-aside-step { grid-column: 1 / -1; padding-top: 8px; font-size: .65rem; }
 
       .register-auth-card { padding: 22px 18px 19px; }
     }
@@ -7133,6 +7148,344 @@ const css = `
       transition-duration: .01ms !important;
     }
   }
+
+  .locentra-app :where(a, button, input, select):focus-visible {
+    outline: 3px solid #287b99;
+    outline-offset: 3px;
+  }
+
+  .property-controls {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 230px;
+    align-items: end;
+    gap: 16px;
+    padding: 18px;
+    border: 1px solid #e2e9e5;
+    border-radius: 16px;
+    background: rgba(255,255,255,.82);
+    box-shadow: 0 6px 20px rgba(19,42,57,.035);
+  }
+
+  .property-search,
+  .property-sort {
+    display: grid;
+    gap: 7px;
+  }
+
+  .property-filter-ranges {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    margin-top: 12px;
+  }
+
+  .property-range-group {
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .property-range-group legend {
+    margin-bottom: 7px;
+    color: #294552;
+    font-size: .84rem;
+    font-weight: 700;
+  }
+
+  .property-range-inputs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .property-range-inputs input {
+    width: 100%;
+    min-width: 0;
+    min-height: 46px;
+    padding: 0 11px;
+    border: 1px solid #cfdcd5;
+    border-radius: 10px;
+    color: #203b49;
+    background: #fff;
+  }
+
+  .property-search label,
+  .property-sort label {
+    color: #294552;
+    font-size: .84rem;
+    font-weight: 700;
+  }
+
+  .property-search-input {
+    min-width: 0;
+    min-height: 46px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 12px;
+    border: 1px solid #cfdcd5;
+    border-radius: 10px;
+    background: #fff;
+    color: #526871;
+  }
+
+  .property-search-input input {
+    width: 100%;
+    min-width: 0;
+    padding: 11px 0;
+    border: 0;
+    outline: 0;
+    color: #132a39;
+    background: transparent;
+  }
+
+  .property-search-input input:focus-visible {
+    outline: 0;
+  }
+
+  .property-search-input:focus-within {
+    border-color: #287b99;
+    box-shadow: 0 0 0 3px rgba(40,123,153,.16);
+  }
+
+  .property-search-input button {
+    flex: 0 0 auto;
+    padding: 5px 7px;
+    border: 0;
+    border-radius: 6px;
+    color: #1c5368;
+    background: #eaf1ed;
+    font-size: .76rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .property-sort select {
+    width: 100%;
+    min-height: 46px;
+    padding: 0 11px;
+    border: 1px solid #cfdcd5;
+    border-radius: 10px;
+    color: #203b49;
+    background: #fff;
+  }
+
+  .property-result-count {
+    margin: 0 0 14px;
+    color: #405761;
+    font-size: .9rem;
+    font-weight: 650;
+  }
+
+  .property-listing-message,
+  .property-listing-error {
+    margin: 0;
+    padding: 20px;
+    border: 1px solid #e2e9e5;
+    border-radius: 14px;
+    background: #fff;
+    color: #405761;
+  }
+
+  .property-listing-error {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    border-color: #edc4c8;
+    color: #7b2632;
+  }
+
+  .property-listing-error .btn {
+    width: auto;
+    flex: 0 0 auto;
+  }
+
+  .property-grid {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 285px), 1fr));
+    align-items: stretch;
+  }
+
+  .property-card-link {
+    display: flex;
+    min-width: 0;
+    flex: 1;
+    flex-direction: column;
+    color: inherit;
+  }
+
+  .locentra-app:not(:has(.home-landing)) .property-card {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    height: 100%;
+    border-radius: 16px;
+  }
+
+  .locentra-app:not(:has(.home-landing)) .property-visual {
+    height: auto;
+    min-height: 184px;
+    aspect-ratio: 16 / 9;
+    background: linear-gradient(145deg, #edf2ef, #dce7e1);
+  }
+
+  .property-visual:has(.property-visual-image)::before,
+  .property-visual:has(.property-visual-image)::after,
+  .detail-gallery:has(.detail-gallery-image)::before,
+  .detail-gallery:has(.detail-gallery-image)::after {
+    display: none;
+  }
+
+  .property-visual-image {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .property-image-fallback {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 8px;
+    color: #48616b;
+    background: linear-gradient(145deg, #edf2ef, #dce7e1);
+    font-size: .82rem;
+    font-weight: 650;
+  }
+
+  .property-body {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+  }
+
+  .locentra-app:not(:has(.home-landing)) .property-head h2 {
+    margin: 0 0 6px;
+    color: #172f3e;
+    font-size: 1.03rem;
+    line-height: 1.4;
+    letter-spacing: -.025em;
+  }
+
+  .property-head p {
+    min-height: 2.6em;
+    line-height: 1.45;
+  }
+
+  .property-footer {
+    margin-top: auto;
+  }
+
+  .property-detail-unavailable {
+    color: #526871;
+    font-size: .76rem;
+  }
+
+  .locentra-app:not(:has(.home-landing)) .detail-gallery {
+    position: relative;
+    min-height: 460px;
+    height: auto;
+    overflow: hidden;
+    background: linear-gradient(145deg, #edf2ef, #dce7e1);
+  }
+
+  .detail-gallery-image {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .detail-gallery .property-image-fallback {
+    position: absolute;
+    inset: 0;
+  }
+
+  .property-visual:has(.property-image-fallback)::before,
+  .property-visual:has(.property-image-fallback)::after {
+    display: none;
+  }
+
+  .properties-empty-state {
+    gap: 10px;
+  }
+
+  .properties-empty-state .link {
+    margin-top: 4px;
+  }
+
+  .not-found-state {
+    display: grid;
+    justify-items: start;
+    gap: 16px;
+    padding: 44px;
+    border: 1px solid #e2e9e5;
+    border-radius: 18px;
+    background: #fff;
+  }
+
+  .not-found-state h1,
+  .not-found-state p {
+    margin: 0;
+  }
+
+  .not-found-state p:not(.eyebrow) {
+    color: #526871;
+  }
+
+  .not-found-state > div {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .not-found-state .btn {
+    width: auto;
+  }
+
+  .login-recovery-note {
+    color: #526871;
+    font-size: .78rem;
+    text-align: right;
+  }
+
+  @media (max-width: 680px) {
+    .property-controls {
+      grid-template-columns: 1fr;
+      padding: 14px;
+    }
+
+    .property-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .property-filter-ranges {
+      grid-template-columns: 1fr;
+    }
+
+    .property-listing-error {
+      align-items: flex-start;
+      flex-direction: column;
+    }
+
+    .property-listing-error .btn {
+      width: 100%;
+    }
+
+    .not-found-state {
+      padding: 26px 20px;
+    }
+
+    .not-found-state > div,
+    .not-found-state .btn {
+      width: 100%;
+    }
+  }
 `;
 
 function Logo() {
@@ -7148,6 +7501,27 @@ function Logo() {
 }
 
 function Navbar() {
+  const location = useLocation();
+  const [role, setRole] = useState(getAuthenticatedRole);
+
+  useEffect(() => {
+    function syncRole() {
+      setRole(getAuthenticatedRole());
+    }
+
+    syncRole();
+    window.addEventListener('storage', syncRole);
+    window.addEventListener('locentra-auth-change', syncRole);
+    return () => {
+      window.removeEventListener('storage', syncRole);
+      window.removeEventListener('locentra-auth-change', syncRole);
+    };
+  }, [location.pathname]);
+
+  const dashboardPath = role === 'tenantRepresentative'
+    ? '/representative/dashboard'
+    : role === 'retailer' ? '/retailer-dashboard' : null;
+
   return (
     <header className="topbar">
       <div className="topbar-inner">
@@ -7158,6 +7532,7 @@ function Navbar() {
           <NavLink to="/properties">Properties</NavLink>
           <NavLink to="/how-it-works">How It Works</NavLink>
           <NavLink to="/about">About</NavLink>
+          {dashboardPath && <NavLink to={dashboardPath} end>Dashboard</NavLink>}
         </nav>
 
         <div className="nav-actions">
@@ -7166,6 +7541,50 @@ function Navbar() {
         </div>
       </div>
     </header>
+  );
+}
+
+function RequireRole({ roles, children }) {
+  const [role, setRole] = useState(getAuthenticatedRole);
+
+  useEffect(() => {
+    function syncRole() {
+      setRole(getAuthenticatedRole());
+    }
+
+    window.addEventListener('storage', syncRole);
+    window.addEventListener('locentra-auth-change', syncRole);
+    return () => {
+      window.removeEventListener('storage', syncRole);
+      window.removeEventListener('locentra-auth-change', syncRole);
+    };
+  }, []);
+
+  if (!role) return <Navigate to="/login" replace />;
+  if (!roles.includes(role)) {
+    return (
+      <Navigate
+        to={role === 'tenantRepresentative' ? '/representative/dashboard' : '/retailer-dashboard'}
+        replace
+      />
+    );
+  }
+
+  return children;
+}
+
+function LogoutButton() {
+  const navigate = useNavigate();
+
+  function handleLogout() {
+    clearAuthentication();
+    navigate('/login', { replace: true, state: { loggedOut: true } });
+  }
+
+  return (
+    <button className="side-link side-logout" type="button" onClick={handleLogout}>
+      Logout
+    </button>
   );
 }
 
@@ -7396,11 +7815,11 @@ function HomePage() {
           </div>
           <div className="home-audience-visual home-retailer-visual home-reveal">
             <div className="home-search-window">
-              <div className="home-window-header"><span className="home-window-brand"><b>L</b> Locentra</span><span className="home-window-status"><i /> YOUR REQUIREMENT</span></div>
+              <div className="home-window-header"><span className="home-window-brand"><b>L</b> Locentra</span><span className="home-window-status"><i /> PREVIEW ONLY</span></div>
               <div className="home-window-title"><span>Let's find your next space</span><small>Tell us what you have in mind</small></div>
               <div className="home-form-row"><span><small>PROPERTY TYPE</small><strong>Retail space</strong></span><span><small>LOCATION</small><strong>Choose an area</strong></span></div>
               <div className="home-form-row"><span><small>SPACE NEEDED</small><strong>e.g. 2,000 sq.ft.</strong></span><span><small>MONTHLY BUDGET</small><strong>Set your range</strong></span></div>
-              <span className="home-form-submit">Build my search <LandingIcon name="arrow" size={15} /></span>
+              <Link to="/register" className="home-form-submit">Create an account to build a search <LandingIcon name="arrow" size={15} /></Link>
             </div>
             <div className="home-visual-stamp"><LandingIcon name="store" size={19} /><span><small>MADE FOR GROWTH</small><strong>Your business, your next move</strong></span></div>
           </div>
@@ -7446,19 +7865,19 @@ function HomePage() {
                   to={`/properties/${property._id}`}
                   className="home-property-image"
                   aria-label={`View ${property.title}`}
-                  style={property.imageUrl ? {
+                  style={property.imageUrl && !isPlaceholderPropertyImage(property.imageUrl) ? {
                     backgroundImage: `linear-gradient(180deg, rgba(17,44,57,.02), rgba(17,44,57,.2)), url("${property.imageUrl}")`,
                     backgroundSize: 'cover',
                     backgroundPosition: 'center',
                   } : undefined}
                 >
                   <span className="home-property-pill">{property.propertyType}</span>
-                  {!property.imageUrl && <>
+                  {(!property.imageUrl || isPlaceholderPropertyImage(property.imageUrl)) && <>
                     <span className="home-scene-sun" />
                     <span className="home-scene-building"><i /><i /><i /><i /><i /><i /><i /><i /><i /></span>
                     <span className="home-scene-foreground" />
                   </>}
-                  <span className="home-scene-label">LOCENTRA <i>·</i> {property.city.toUpperCase()}</span>
+                  <span className="home-scene-label">{!property.imageUrl || isPlaceholderPropertyImage(property.imageUrl) ? 'ILLUSTRATIVE PREVIEW' : 'LOCENTRA'} <i>·</i> {property.city.toUpperCase()}</span>
                 </Link>
                 <div className="home-property-content">
                   <div className="home-property-location"><LandingIcon name="pin" size={15} />{property.location}, {property.city}</div>
@@ -7668,9 +8087,22 @@ function AboutPage() {
 function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+
+  useEffect(() => {
+    function clearLoginFields() {
+      setEmail('');
+      setPassword('');
+    }
+
+    clearLoginFields();
+    window.addEventListener('locentra-auth-change', clearLoginFields);
+    return () => window.removeEventListener('locentra-auth-change', clearLoginFields);
+  }, [location.key, location.state?.loggedOut]);
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -7688,7 +8120,7 @@ function LoginPage() {
       const otherStorage = storage === window.localStorage ? window.sessionStorage : window.localStorage;
       otherStorage.removeItem('locentraAuth');
       storage.setItem('locentraAuth', authentication);
-      navigate(result.user.role === 'tenantRepresentative' ? '/tenant-dashboard' : '/retailer-dashboard');
+      navigate(result.user.role === 'tenantRepresentative' ? '/representative/dashboard' : '/retailer-dashboard');
     } catch (error) {
       setErrorMessage(error.message || 'Unable to sign in. Please try again.');
     } finally {
@@ -7726,16 +8158,16 @@ function LoginPage() {
             <h2>Good to see you again.</h2>
             <p>Sign in to pick up where you left off.</p>
           </div>
-          <form className="auth-card login-auth-card" onSubmit={handleSubmit}>
+          <form className="auth-card login-auth-card" autoComplete="off" onSubmit={handleSubmit}>
             {location.state?.registrationSuccess && <p className="auth-feedback auth-feedback-success" role="status">{location.state.registrationSuccess}</p>}
             <div className="field">
               <label htmlFor="login-email">Email address</label>
-              <input id="login-email" name="email" type="email" autoComplete="email" placeholder="you@example.com" required />
+              <input id="login-email" name="email" type="email" autoComplete="off" placeholder="you@example.com" value={email} onChange={(event) => setEmail(event.currentTarget.value)} required />
             </div>
             <div className="field">
               <label htmlFor="login-password">Password</label>
               <div className="auth-password-wrap">
-                <input id="login-password" name="password" type={showPassword ? 'text' : 'password'} autoComplete="current-password" placeholder="Enter your password" required />
+                <input id="login-password" name="password" type={showPassword ? 'text' : 'password'} autoComplete="off" placeholder="Enter your password" value={password} onChange={(event) => setPassword(event.currentTarget.value)} required />
                 <button type="button" className="auth-password-toggle" aria-label={showPassword ? 'Hide password' : 'Show password'} onClick={() => setShowPassword((shown) => !shown)}>
                   {showPassword ? 'Hide' : 'Show'}
                 </button>
@@ -7743,7 +8175,7 @@ function LoginPage() {
             </div>
             <div className="login-form-options">
               <label><input name="remember" type="checkbox" /> Remember me</label>
-              <a href="#" className="auth-lnk">Forgot password?</a>
+              <span className="login-recovery-note">Password recovery is not available yet.</span>
             </div>
             {errorMessage && <p className="auth-feedback auth-feedback-error" role="alert">{errorMessage}</p>}
             <button type="submit" className="btn btn-primary full-width login-submit" disabled={isSubmitting}>{isSubmitting ? 'Signing In...' : 'Sign In'} {!isSubmitting && <LandingIcon name="arrow" size={17} />}</button>
@@ -7781,6 +8213,8 @@ function RegisterPage() {
     try {
       const result = await registerAccount({
         name: formData.get('name'),
+        company: formData.get('company'),
+        phone: formData.get('phone'),
         email: formData.get('email'),
         password: formData.get('password'),
         role: role === 'tenant-representative' ? 'tenantRepresentative' : 'retailer',
@@ -7849,29 +8283,141 @@ function RegisterPage() {
   );
 }
 
-function PropertiesPage() {
-  const [activeType, setActiveType] = useState('All');
-  const [propertyData, setPropertyData] = useState({ type: null, properties: [] });
-  const [errorMessage, setErrorMessage] = useState('');
-  const filters = ['All', 'Retail', 'Office', 'Industrial'];
-  const visibleProperties = propertyData.properties;
-  const isLoading = propertyData.type !== activeType && !errorMessage;
+const PROPERTY_CATEGORIES = [
+  'All',
+  'Retail',
+  'Office',
+  'Warehouse',
+  'Industrial',
+  'Shopping Center',
+  'Land',
+  'Mixed Use',
+  'Other',
+];
 
-  useEffect(() => {
-    let active = true;
-    getProperties(activeType)
-      .then((result) => { if (active) setPropertyData({ type: activeType, properties: result.properties }); })
-      .catch((error) => { if (active) setErrorMessage(error.message || 'Unable to load properties.'); });
-    return () => { active = false; };
-  }, [activeType]);
+function formatPropertyNumber(value) {
+  if (value === null || value === undefined || value === '') return 'Not provided';
+  const number = Number(value);
+  return Number.isFinite(number) ? number.toLocaleString() : 'Not provided';
+}
 
-  function selectFilter(filter) {
-    setErrorMessage('');
-    setActiveType(filter);
+function isPlaceholderPropertyImage(imageUrl) {
+  if (typeof imageUrl !== 'string' || !imageUrl.trim()) return false;
+  try {
+    return ['placehold.co', 'placehold.it'].includes(new URL(imageUrl).hostname.toLowerCase());
+  } catch {
+    return false;
+  }
+}
+
+function PropertyImage({ imageUrl, title, className }) {
+  const [hasFailed, setHasFailed] = useState(false);
+
+  if (!imageUrl || isPlaceholderPropertyImage(imageUrl) || hasFailed) {
+    return (
+      <div className={`${className} property-image-fallback`} role="img" aria-label={`Image unavailable for ${title || 'this property'}`}>
+        <LandingIcon name="building" size={30} />
+        <span>Image unavailable</span>
+      </div>
+    );
   }
 
   return (
-    <div className="page">
+    <img
+      className={className}
+      src={imageUrl}
+      alt={`${title || 'Property'} image`}
+      loading="lazy"
+      decoding="async"
+      onError={() => setHasFailed(true)}
+    />
+  );
+}
+
+function PropertiesPage() {
+  const [activeType, setActiveType] = useState('All');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [minimumBudget, setMinimumBudget] = useState('');
+  const [maximumBudget, setMaximumBudget] = useState('');
+  const [minimumArea, setMinimumArea] = useState('');
+  const [maximumArea, setMaximumArea] = useState('');
+  const [sortOrder, setSortOrder] = useState('newest');
+  const [listingState, setListingState] = useState({ status: 'loading', properties: [] });
+  const [retryCount, setRetryCount] = useState(0);
+
+  useEffect(() => {
+    let active = true;
+    getProperties()
+      .then((result) => {
+        if (active) setListingState({ status: 'success', properties: result.properties || [] });
+      })
+      .catch(() => {
+        if (active) setListingState({ status: 'error', properties: [] });
+      });
+    return () => { active = false; };
+  }, [retryCount]);
+
+  const normalizedSearch = searchTerm.trim().toLocaleLowerCase();
+  const normalizedCategory = activeType.toLocaleLowerCase().replace(/\s+/g, '');
+  function isWithinRange(value, minimum, maximum) {
+    if (minimum === '' && maximum === '') return true;
+    if (value === null || value === undefined || value === '') return false;
+    const number = Number(value);
+    if (!Number.isFinite(number)) return false;
+    return (minimum === '' || number >= Number(minimum))
+      && (maximum === '' || number <= Number(maximum));
+  }
+
+  const visibleProperties = listingState.properties
+    .filter((property) => (
+      (activeType === 'All'
+        || String(property.propertyType || '').toLocaleLowerCase().replace(/\s+/g, '') === normalizedCategory)
+      && (!normalizedSearch || [
+        property.title,
+        property.location,
+        property.city,
+        property.propertyType,
+      ].filter(Boolean).join(' ').toLocaleLowerCase().includes(normalizedSearch))
+      && isWithinRange(property.monthlyRent, minimumBudget, maximumBudget)
+      && isWithinRange(property.areaSqFt, minimumArea, maximumArea)
+    ))
+    .sort((left, right) => {
+      if (sortOrder === 'price-ascending') {
+        const leftPrice = Number(left.monthlyRent);
+        const rightPrice = Number(right.monthlyRent);
+        const hasLeftPrice = left.monthlyRent !== null && left.monthlyRent !== undefined && left.monthlyRent !== '' && Number.isFinite(leftPrice);
+        const hasRightPrice = right.monthlyRent !== null && right.monthlyRent !== undefined && right.monthlyRent !== '' && Number.isFinite(rightPrice);
+        if (hasLeftPrice !== hasRightPrice) return hasLeftPrice ? -1 : 1;
+        if (hasLeftPrice) return leftPrice - rightPrice;
+        return 0;
+      }
+      if (sortOrder === 'price-descending') {
+        const leftPrice = Number(left.monthlyRent);
+        const rightPrice = Number(right.monthlyRent);
+        const hasLeftPrice = left.monthlyRent !== null && left.monthlyRent !== undefined && left.monthlyRent !== '' && Number.isFinite(leftPrice);
+        const hasRightPrice = right.monthlyRent !== null && right.monthlyRent !== undefined && right.monthlyRent !== '' && Number.isFinite(rightPrice);
+        if (hasLeftPrice !== hasRightPrice) return hasLeftPrice ? -1 : 1;
+        if (hasLeftPrice) return rightPrice - leftPrice;
+        return 0;
+      }
+      return new Date(right.createdAt || 0).getTime() - new Date(left.createdAt || 0).getTime();
+    });
+  const isLoading = listingState.status === 'loading';
+  const hasError = listingState.status === 'error';
+  const hasActiveFilters = activeType !== 'All'
+    || Boolean(normalizedSearch || minimumBudget || maximumBudget || minimumArea || maximumArea);
+
+  function clearFilters() {
+    setActiveType('All');
+    setSearchTerm('');
+    setMinimumBudget('');
+    setMaximumBudget('');
+    setMinimumArea('');
+    setMaximumArea('');
+  }
+
+  return (
+    <main className="page">
       <div className="container">
         <div className="page-header">
           <div>
@@ -7880,67 +8426,178 @@ function PropertiesPage() {
           </div>
         </div>
 
-        <div className="filter-bar">
-          {filters.map((filter) => (
+        <div className="property-controls">
+          <div className="property-search">
+            <label htmlFor="property-search">Search listings</label>
+            <div className="property-search-input">
+              <LandingIcon name="search" size={19} />
+              <input
+                id="property-search"
+                type="search"
+                value={searchTerm}
+                onChange={(event) => setSearchTerm(event.target.value)}
+                placeholder="Name, location, city, or category"
+                autoComplete="off"
+              />
+              {searchTerm && (
+                <button type="button" onClick={() => setSearchTerm('')} aria-label="Clear property search">
+                  Clear
+                </button>
+              )}
+            </div>
+          </div>
+          <div className="property-sort">
+            <label htmlFor="property-sort">Sort by</label>
+            <select id="property-sort" value={sortOrder} onChange={(event) => setSortOrder(event.target.value)}>
+              <option value="newest">Newest first</option>
+              <option value="price-ascending">Price: low to high</option>
+              <option value="price-descending">Price: high to low</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="property-filter-ranges">
+          <fieldset className="property-range-group">
+            <legend>Monthly budget (₹)</legend>
+            <div className="property-range-inputs">
+              <input
+                type="number"
+                min="0"
+                step="any"
+                inputMode="decimal"
+                aria-label="Minimum monthly budget"
+                placeholder="Min"
+                value={minimumBudget}
+                onChange={(event) => setMinimumBudget(event.target.value)}
+              />
+              <input
+                type="number"
+                min="0"
+                step="any"
+                inputMode="decimal"
+                aria-label="Maximum monthly budget"
+                placeholder="Max"
+                value={maximumBudget}
+                onChange={(event) => setMaximumBudget(event.target.value)}
+              />
+            </div>
+          </fieldset>
+          <fieldset className="property-range-group">
+            <legend>Area (sq.ft.)</legend>
+            <div className="property-range-inputs">
+              <input
+                type="number"
+                min="0"
+                step="any"
+                inputMode="decimal"
+                aria-label="Minimum area in square feet"
+                placeholder="Min"
+                value={minimumArea}
+                onChange={(event) => setMinimumArea(event.target.value)}
+              />
+              <input
+                type="number"
+                min="0"
+                step="any"
+                inputMode="decimal"
+                aria-label="Maximum area in square feet"
+                placeholder="Max"
+                value={maximumArea}
+                onChange={(event) => setMaximumArea(event.target.value)}
+              />
+            </div>
+          </fieldset>
+        </div>
+
+        <div className="filter-bar" role="group" aria-label="Filter properties by category">
+          {PROPERTY_CATEGORIES.map((filter) => (
             <button
               key={filter}
               className={`chip${activeType === filter ? ' active' : ''}`}
               type="button"
               aria-pressed={activeType === filter}
-              onClick={() => selectFilter(filter)}
+              onClick={() => setActiveType(filter)}
             >
               {filter}
             </button>
           ))}
         </div>
 
-        {isLoading ? <p role="status">Loading properties...</p> : null}
-        {errorMessage && <p className="auth-feedback auth-feedback-error" role="alert">{errorMessage}</p>}
-        {!isLoading && !errorMessage && visibleProperties.length > 0 ? (
-          <div className="property-grid">
-            {visibleProperties.map((property) => (
-              <article className="property-card" key={property._id}>
-                <div className="property-visual" style={property.imageUrl ? { backgroundImage: `url("${property.imageUrl}")`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined} />
-                <div className="property-body">
-                  <div className="property-head">
-                    <div>
-                      <h3>{property.title}</h3>
-                      <p>{property.location}, {property.city}</p>
+        {isLoading && <p className="property-listing-message" role="status">Loading properties...</p>}
+        {hasError && (
+          <div className="property-listing-error" role="alert">
+            <p>Properties could not be loaded right now. Please check your connection and try again.</p>
+            <button className="btn btn-secondary" type="button" onClick={() => {
+              setListingState({ status: 'loading', properties: [] });
+              setRetryCount((count) => count + 1);
+            }}>Retry</button>
+          </div>
+        )}
+        {!isLoading && !hasError && (
+          <>
+            <p className="property-result-count" aria-live="polite" role="status">
+              {visibleProperties.length} {visibleProperties.length === 1 ? 'property' : 'properties'} found
+              {activeType !== 'All' ? ` in ${activeType}` : ''}
+              {normalizedSearch ? ` for “${searchTerm.trim()}”` : ''}
+            </p>
+            {visibleProperties.length > 0 ? (
+              <div className="property-grid">
+                {visibleProperties.map((property) => (
+                  <article className="property-card" key={property._id}>
+                    <Link to={`/properties/${property._id}`} className="property-card-link" aria-label={`View details for ${property.title || 'property'}`}>
+                    <div className="property-visual">
+                      <PropertyImage imageUrl={property.imageUrl} title={property.title} className="property-visual-image" />
                     </div>
-                  </div>
+                    <div className="property-body">
+                      <div className="property-head">
+                        <div>
+                          <h2>{property.title || 'Untitled property'}</h2>
+                          <p>{[property.location, property.city].filter(Boolean).join(', ') || 'Location not provided'}</p>
+                        </div>
+                      </div>
 
-                  <div className="property-meta">
-                    <span>{property.propertyType}</span>
-                    <span>{property.areaSqFt.toLocaleString()} sq.ft.</span>
-                    <span>₹{property.monthlyRent.toLocaleString()}/month</span>
-                  </div>
+                      <div className="property-meta">
+                        <span>{property.propertyType || 'Category not provided'}</span>
+                        <span>{formatPropertyNumber(property.areaSqFt)} sq.ft.</span>
+                        <span>{property.monthlyRent === null || property.monthlyRent === undefined || property.monthlyRent === '' ? 'Rent not provided' : `₹${formatPropertyNumber(property.monthlyRent)}/month`}</span>
+                      </div>
 
-                  <div className="property-footer">
-                    <span className="status-pill">{property.footTraffic} foot traffic</span>
-                    <Link to={`/properties/${property._id}`} className="link">View Details</Link>
-                  </div>
-                </div>
-              </article>
-            ))}
-          </div>
-        ) : null}
-        {!isLoading && !errorMessage && visibleProperties.length === 0 ? (
-          <div className="properties-empty-state" role="status">
-            <span><LandingIcon name="search" size={24} /></span>
-            <h2>No properties found</h2>
-            <p>There are no {activeType === 'All' ? 'property' : activeType.toLowerCase()} listings published yet. New properties appear here when a tenant representative lists them.</p>
-            {activeType !== 'All' && <button className="btn btn-secondary" type="button" onClick={() => setActiveType('All')}>View all properties</button>}
-            <Link className="link" to="/login">Are you a tenant representative? Sign in to publish a listing.</Link>
-          </div>
-        ) : null}
+                      <div className="property-footer">
+                        {property.footTraffic
+                          ? <span className="status-pill">{property.footTraffic} foot traffic</span>
+                          : <span className="property-detail-unavailable">Foot traffic not provided</span>}
+                        <span className="link">View Details</span>
+                      </div>
+                    </div>
+                    </Link>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <div className="properties-empty-state" role="status">
+                <span><LandingIcon name="search" size={24} /></span>
+                <h2>No properties found</h2>
+                <p>
+                  {hasActiveFilters
+                    ? 'Try adjusting or clearing your filters to see more listings.'
+                    : `There are no ${activeType === 'All' ? 'property' : activeType.toLowerCase()} listings published yet.`}
+                </p>
+                {hasActiveFilters
+                  ? <button className="btn btn-secondary" type="button" onClick={clearFilters}>Clear filters</button>
+                  : <Link className="link" to="/login">Are you a tenant representative? Sign in to publish a listing.</Link>}
+              </div>
+            )}
+          </>
+        )}
       </div>
-    </div>
+    </main>
   );
 }
 
 function PropertyDetailsPage() {
   const { id } = useParams();
   const [propertyState, setPropertyState] = useState({ id: null, property: null });
+  const [retryCount, setRetryCount] = useState(0);
   const [saved, setSaved] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isContacting, setIsContacting] = useState(false);
@@ -7970,9 +8627,21 @@ function PropertyDetailsPage() {
           setRequestSent(existingContactRequests.requests.some((request) => request.property?._id === id));
         }
       })
-      .catch((error) => { if (active) setLoadError({ id, message: error.message || 'Unable to load this property.' }); });
+      .catch((error) => {
+        if (!active) return;
+        const message = error.message?.toLowerCase().includes('property not found')
+          ? 'This property is no longer available.'
+          : 'Property details could not be loaded. Please try again.';
+        setLoadError({ id, message });
+      });
     return () => { active = false; };
-  }, [id]);
+  }, [id, retryCount]);
+
+  useEffect(() => {
+      if (property) {
+        setPageMetadata(`${property.title || 'Property Details'} | Locentra`, `Explore ${property.title || 'this property'} in ${[property.location, property.city].filter(Boolean).join(', ') || 'a commercial location'}. Review the property details and contact its representative.`);
+      }
+  }, [property]);
 
   async function toggleSaved() {
     setIsSaving(true);
@@ -8018,28 +8687,38 @@ function PropertyDetailsPage() {
   return (
     <div className="page">
       <div className="container">
-        {isLoading && <p role="status">Loading property details...</p>}
-        {!isLoading && currentLoadError && !property && <p className="auth-feedback auth-feedback-error" role="alert">{currentLoadError}</p>}
+        {isLoading && <p className="property-listing-message" role="status">Loading property details...</p>}
+        {!isLoading && currentLoadError && !property && (
+          <div className="property-listing-error" role="alert">
+            <p>{currentLoadError}</p>
+            <button className="btn btn-secondary" type="button" onClick={() => {
+              setLoadError({ id: null, message: '' });
+              setRetryCount((count) => count + 1);
+            }}>Retry</button>
+          </div>
+        )}
         {property && <>
         <div className="detail-layout">
-          <div className="detail-gallery" style={property.imageUrl ? { backgroundImage: `url("${property.imageUrl}")`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined} />
+          <div className="detail-gallery">
+            <PropertyImage key={property._id} imageUrl={property.imageUrl} title={property.title} className="detail-gallery-image" />
+          </div>
 
           <div className="detail-card">
-            <p className="eyebrow">{property.propertyType}</p>
-            <h1>{property.title}</h1>
-            <p>{property.location}, {property.city}</p>
+            <p className="eyebrow">{property.propertyType || 'Property category'}</p>
+            <h1>{property.title || 'Property details'}</h1>
+            <p>{[property.location, property.city].filter(Boolean).join(', ') || 'Location not provided'}</p>
 
             <div className="detail-metrics">
               <div className="metric-box">
-                <strong>{property.areaSqFt.toLocaleString()} sq.ft.</strong>
+                <strong>{formatPropertyNumber(property.areaSqFt)} sq.ft.</strong>
                 <span>Size</span>
               </div>
               <div className="metric-box">
-                <strong>₹{property.monthlyRent.toLocaleString()}/month</strong>
+                <strong>{property.monthlyRent === null || property.monthlyRent === undefined || property.monthlyRent === '' ? 'Rent not provided' : `₹${formatPropertyNumber(property.monthlyRent)}/month`}</strong>
                 <span>Rent</span>
               </div>
               <div className="metric-box">
-                <strong>{property.footTraffic}</strong>
+                <strong>{property.footTraffic || 'Not provided'}</strong>
                 <span>Foot traffic</span>
               </div>
             </div>
@@ -8054,8 +8733,8 @@ function PropertyDetailsPage() {
             <div className="feature-card">
               <h3 style={{ marginTop: 0, marginBottom: 12 }}>Property information</h3>
               <ul className="feature-list" style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '10px', color: 'var(--locentra-text-soft)' }}>
-                <li>Parking: {property.parking ? 'Available' : 'Not available'}</li>
-                <li>Foot traffic: {property.footTraffic}</li>
+                <li>Parking: {property.parking === undefined || property.parking === null ? 'Not provided' : property.parking ? 'Available' : 'Not available'}</li>
+                <li>Foot traffic: {property.footTraffic || 'Not provided'}</li>
                 <li>Representative: {property.representative?.name || 'Not assigned'}</li>
                 {property.description && <li>{property.description}</li>}
               </ul>
@@ -8070,6 +8749,7 @@ function PropertyDetailsPage() {
 
 function RetailerDashboardPage() {
   const location = useLocation();
+  const navigate = useNavigate();
   const [profile, setProfile] = useState(null);
   const [requirements, setRequirements] = useState([]);
   const [selectedRequirement, setSelectedRequirement] = useState(null);
@@ -8083,48 +8763,58 @@ function RetailerDashboardPage() {
   const [requirementsLoading, setRequirementsLoading] = useState(true);
   const [matchesLoading, setMatchesLoading] = useState(false);
   const [dashboardError, setDashboardError] = useState('');
+  const [isAuthorized, setIsAuthorized] = useState(false);
+  const matchRequestId = useRef(0);
   const requestedRequirementId = location.state?.requirementId;
 
   useEffect(() => {
     let active = true;
+    const requestId = ++matchRequestId.current;
 
     async function loadRequirements() {
       setRequirementsLoading(true);
       setDashboardError('');
       try {
-        const [result, favoritesResult, contactsResult, profileResult] = await Promise.all([
-          getRequirements(),
+        const profileResult = await getProfile();
+        if (!active) return;
+        if (profileResult.user.role !== 'retailer') {
+          navigate('/representative/dashboard', { replace: true });
+          return;
+        }
+        setIsAuthorized(true);
+
+        const [matchResult, favoritesResult, contactsResult] = await Promise.all([
+          getRequirementMatchesSummary(requestedRequirementId),
           getFavorites(),
           getContactRequests(),
-          getProfile(),
         ]);
         if (!active) return;
-        setRequirements(result.requirements);
+        setRequirements(matchResult.requirements);
         setSavedCount(favoritesResult.favorites.length);
         setSavedPropertyIds(favoritesResult.favorites.map((favorite) => favorite.property?._id).filter(Boolean));
         setContactRequestCount(contactsResult.requests.length);
         setContactedPropertyIds(contactsResult.requests.map((request) => request.property?._id).filter(Boolean));
         setProfile(profileResult.user);
-        const target = result.requirements.find((item) => item._id === requestedRequirementId)
-          || result.requirements[0];
+        const target = matchResult.requirements.find((item) => item._id === requestedRequirementId)
+          || matchResult.requirements[0];
         setSelectedRequirement(target || null);
-        if (result.requirements.length) {
+        if (target) {
           setMatchesLoading(true);
-          const matchResults = await Promise.all(result.requirements.map((item) => getRequirementMatches(item._id)));
-          if (active) {
-            const uniqueMatches = new Map();
-            matchResults.flatMap((matchResult) => matchResult.matches).forEach((match) => {
-              const current = uniqueMatches.get(match.property._id);
-              if (!current || current.matchScore < match.matchScore) uniqueMatches.set(match.property._id, match);
-            });
-            setMatches(target ? matchResults[result.requirements.indexOf(target)].matches : []);
-            setMatchCount(uniqueMatches.size);
+          if (matchRequestId.current === requestId) {
+            setMatches(matchResult.matches);
+            setMatchCount(matchResult.matchCount);
           }
         } else {
-          setMatches([]);
-          setMatchCount(0);
+          if (matchRequestId.current === requestId) {
+            setMatches([]);
+            setMatchCount(0);
+          }
         }
       } catch (error) {
+        if (active && /please sign in|session is invalid|session has expired|account could not be found/i.test(error.message || '')) {
+          navigate('/login', { replace: true });
+          return;
+        }
         if (active) setDashboardError(error.message || 'Unable to load your requirements.');
       } finally {
         if (active) {
@@ -8136,21 +8826,38 @@ function RetailerDashboardPage() {
 
     loadRequirements();
     return () => { active = false; };
-  }, [requestedRequirementId]);
+  }, [navigate, requestedRequirementId]);
 
   async function showRequirementMatches(requirement) {
+    const requestId = ++matchRequestId.current;
     setSelectedRequirement(requirement);
     setMatches([]);
     setDashboardError('');
     setMatchesLoading(true);
     try {
       const result = await getRequirementMatches(requirement._id);
-      setMatches(result.matches);
+      if (matchRequestId.current === requestId) setMatches(result.matches);
     } catch (error) {
-      setDashboardError(error.message || 'Unable to load matching properties.');
+      if (matchRequestId.current === requestId) {
+        if (/please sign in|session is invalid|session has expired|account could not be found/i.test(error.message || '')) {
+          navigate('/login', { replace: true });
+          return;
+        }
+        setDashboardError(error.message || 'Unable to load matching properties.');
+      }
     } finally {
-      setMatchesLoading(false);
+      if (matchRequestId.current === requestId) setMatchesLoading(false);
     }
+  }
+
+  if (!isAuthorized || requirementsLoading) {
+    return (
+      <main className="page">
+        <div className="container">
+          <p role="status">Verifying retailer access and loading your dashboard...</p>
+        </div>
+      </main>
+    );
   }
 
   return (
@@ -8160,12 +8867,13 @@ function RetailerDashboardPage() {
           <aside className="sidebar">
             <h3>Retailer</h3>
             <div className="side-nav">
-              <NavLink to="/retailer-dashboard" className="side-link active">Dashboard</NavLink>
+              <NavLink to="/retailer-dashboard" end className={({ isActive }) => `side-link${isActive ? ' active' : ''}`}>Dashboard</NavLink>
               <NavLink to="/create-requirement" className="side-link">My Requirements</NavLink>
               <NavLink to="/properties" className="side-link">Find Properties</NavLink>
               <NavLink to="/saved" className="side-link">Saved Properties</NavLink>
               <NavLink to="/contact-requests" className="side-link">Contact Requests</NavLink>
               <NavLink to="/profile" className="side-link">Profile</NavLink>
+              <LogoutButton />
             </div>
           </aside>
 
@@ -8251,19 +8959,19 @@ function RetailerDashboardPage() {
                       <div className="retailer-match-metrics">
                         <div>
                           <span>Monthly rent</span>
-                          <strong>₹{property.monthlyRent.toLocaleString()}</strong>
+                          <strong>{property.monthlyRent === null || property.monthlyRent === undefined || property.monthlyRent === '' ? 'Not provided' : `₹${formatPropertyNumber(property.monthlyRent)}`}</strong>
                         </div>
                         <div>
                           <span>Area</span>
-                          <strong>{property.areaSqFt.toLocaleString()} sq.ft.</strong>
+                          <strong>{property.areaSqFt === null || property.areaSqFt === undefined || property.areaSqFt === '' ? 'Not provided' : `${formatPropertyNumber(property.areaSqFt)} sq.ft.`}</strong>
                         </div>
                         <div>
                           <span>Parking</span>
-                          <strong>{property.parking ? 'Available' : 'Unavailable'}</strong>
+                          <strong>{property.parking === null || property.parking === undefined ? 'Not provided' : property.parking ? 'Available' : 'Unavailable'}</strong>
                         </div>
                         <div>
                           <span>Foot traffic</span>
-                          <strong>{property.footTraffic}</strong>
+                          <strong>{property.footTraffic || 'Not provided'}</strong>
                         </div>
                       </div>
                       <p className="retailer-match-reasons">{matchingReasons.join(' ')}</p>
@@ -8321,7 +9029,7 @@ function RetailerDashboardPage() {
               <p>Your account information. Your password is securely protected and is never displayed.</p>
               {profile && <p><strong>{profile.name}</strong> · {profile.email} · Retailer</p>}
             </div>
-            {dashboardError && <p className="auth-feedback auth-feedback-error" role="alert">{dashboardError} <Link to="/login">Sign in again</Link></p>}
+            {dashboardError && <p className="auth-feedback auth-feedback-error" role="alert">{dashboardError} {/please sign in|session is invalid|session has expired|account could not be found/i.test(dashboardError) && <Link to="/login">Sign in again</Link>}</p>}
           </main>
         </div>
       </div>
@@ -8487,10 +9195,9 @@ function CreateRequirementPage() {
                 <label>Property Type</label>
                 <select name="propertyType" value={formValues.propertyType} onChange={updateField}>
                   <option value="">Select property type</option>
-                  <option>Retail</option>
-                  <option>Office</option>
-                  <option>Industrial</option>
-                  <option>Mixed Use</option>
+                  {PROPERTY_CATEGORIES.filter((category) => category !== 'All').map((category) => (
+                    <option key={category}>{category}</option>
+                  ))}
                 </select>
               </div>
 
@@ -8565,7 +9272,9 @@ function CreateRequirementPage() {
 function SavedPropertiesPage() {
   const [favorites, setFavorites] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [removingPropertyId, setRemovingPropertyId] = useState(null);
   const [errorMessage, setErrorMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
 
   useEffect(() => {
     let active = true;
@@ -8577,11 +9286,17 @@ function SavedPropertiesPage() {
   }, []);
 
   async function handleRemove(propertyId) {
+    setRemovingPropertyId(propertyId);
+    setErrorMessage('');
+    setSuccessMessage('');
     try {
       await removeFavorite(propertyId);
       setFavorites((current) => current.filter((favorite) => favorite.property?._id !== propertyId));
+      setSuccessMessage('Property removed from your saved list.');
     } catch (error) {
       setErrorMessage(error.message || 'Unable to remove saved property.');
+    } finally {
+      setRemovingPropertyId(null);
     }
   }
 
@@ -8597,6 +9312,7 @@ function SavedPropertiesPage() {
 
         {isLoading && <p role="status">Loading saved properties...</p>}
         {errorMessage && <p className="auth-feedback auth-feedback-error" role="alert">{errorMessage}</p>}
+        {successMessage && <p className="auth-feedback auth-feedback-success" role="status">{successMessage}</p>}
         {!isLoading && !errorMessage && favorites.length === 0 && (
           <div className="properties-empty-state" role="status">
             <span><LandingIcon name="search" size={24} /></span>
@@ -8618,16 +9334,16 @@ function SavedPropertiesPage() {
                 </div>
 
                 <div className="property-meta">
-                  <span>{property.propertyType}</span>
-                  <span>{property.areaSqFt.toLocaleString()} sq.ft.</span>
-                  <span>₹{property.monthlyRent.toLocaleString()}/month</span>
+                  <span>{property.propertyType || 'Category not provided'}</span>
+                  <span>{formatPropertyNumber(property.areaSqFt)} sq.ft.</span>
+                  <span>{property.monthlyRent === null || property.monthlyRent === undefined || property.monthlyRent === '' ? 'Rent not provided' : `₹${formatPropertyNumber(property.monthlyRent)}/month`}</span>
                 </div>
 
                 <div className="property-footer">
                   <span className="status-pill">Saved</span>
                   <div className="detail-actions">
                     <Link to={`/properties/${property._id}`} className="btn btn-secondary btn-small">View Details</Link>
-                    <button type="button" className="btn btn-secondary btn-small" onClick={() => handleRemove(property._id)}>Remove</button>
+                    <button type="button" className="btn btn-secondary btn-small" onClick={() => handleRemove(property._id)} disabled={removingPropertyId === property._id}>{removingPropertyId === property._id ? 'Removing...' : 'Remove'}</button>
                   </div>
                 </div>
               </div>
@@ -8643,6 +9359,7 @@ function ContactRequestsPage() {
   const [requests, setRequests] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
     let active = true;
@@ -8651,7 +9368,7 @@ function ContactRequestsPage() {
       .catch((error) => { if (active) setErrorMessage(error.message || 'Unable to load contact requests.'); })
       .finally(() => { if (active) setIsLoading(false); });
     return () => { active = false; };
-  }, []);
+  }, [retryCount]);
 
   return (
     <div className="page">
@@ -8664,7 +9381,18 @@ function ContactRequestsPage() {
         </div>
 
         {isLoading && <p role="status">Loading your contact requests...</p>}
-        {errorMessage && <p className="auth-feedback auth-feedback-error" role="alert">{errorMessage} <Link to="/login">Sign in</Link></p>}
+        {errorMessage && (
+          <div className="auth-feedback auth-feedback-error" role="alert">
+            <p>{errorMessage}</p>
+            {/please sign in|session is invalid|session has expired|account could not be found/i.test(errorMessage)
+              ? <Link to="/login">Sign in</Link>
+              : <button type="button" className="btn btn-secondary btn-small" onClick={() => {
+                setIsLoading(true);
+                setErrorMessage('');
+                setRetryCount((count) => count + 1);
+              }}>Retry</button>}
+          </div>
+        )}
         {!isLoading && !errorMessage && requests.length === 0 && (
           <div className="properties-empty-state" role="status">
             <span><LandingIcon name="people" size={24} /></span>
@@ -8678,9 +9406,12 @@ function ContactRequestsPage() {
               <div className="list-row" key={request._id}>
                 <div>
                   <strong>{request.property?.title || 'Property no longer available'}</strong>
-                  <small>{request.representative?.name || 'Representative'} · {request.property?.location}, {request.property?.city}</small>
+                  <small>
+                    {request.representative?.name || 'Representative'}
+                    {request.property && ` · ${[request.property.location, request.property.city].filter(Boolean).join(', ')}`}
+                  </small>
                 </div>
-                <span className="label">{request.status.charAt(0).toUpperCase() + request.status.slice(1)}</span>
+                <span className="label">{request.status ? `${request.status.charAt(0).toUpperCase()}${request.status.slice(1)}` : 'Status unavailable'}</span>
                 <small>{new Date(request.createdAt).toLocaleDateString()}</small>
               </div>
             ))}
@@ -8727,32 +9458,63 @@ function ProfilePage() {
 }
 
 function RepresentativeDashboardPage() {
+  const navigate = useNavigate();
   const [profile, setProfile] = useState(null);
   const [properties, setProperties] = useState([]);
   const [requests, setRequests] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isAuthorized, setIsAuthorized] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
     let active = true;
-    Promise.all([getProfile(), getMyProperties(), getReceivedContactRequests()])
-      .then(([profileResult, propertyResult, requestResult]) => {
+    async function loadDashboard() {
+      try {
+        const profileResult = await getProfile();
+        if (!active) return;
+        if (profileResult.user.role !== 'tenantRepresentative') {
+          navigate('/retailer-dashboard', { replace: true });
+          return;
+        }
+        setIsAuthorized(true);
+
+        const [propertyResult, requestResult] = await Promise.all([
+          getMyProperties(),
+          getReceivedContactRequests(),
+        ]);
         if (!active) return;
         setProfile(profileResult.user);
         setProperties(propertyResult.properties);
         setRequests(requestResult.requests);
-      })
-      .catch((error) => {
-        if (active) setErrorMessage(error.message || 'Unable to load your representative dashboard.');
-      })
-      .finally(() => {
+      } catch (error) {
+        if (!active) return;
+        if (/please sign in|session is invalid|session has expired|account could not be found/i.test(error.message || '')) {
+          navigate('/login', { replace: true });
+          return;
+        }
+        setErrorMessage(error.message || 'Unable to load your representative dashboard.');
+      } finally {
         if (active) setIsLoading(false);
-      });
+      }
+    }
+
+    loadDashboard();
     return () => { active = false; };
-  }, []);
+  }, [navigate, retryCount]);
 
   const pendingRequests = requests.filter((request) => request.status === 'pending').length;
   const completedRequests = requests.filter((request) => request.status === 'completed').length;
+
+  if (!isAuthorized || isLoading) {
+    return (
+      <main className="page">
+        <div className="container">
+          <p role="status">Verifying representative access and loading your dashboard...</p>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <div className="page">
@@ -8761,11 +9523,12 @@ function RepresentativeDashboardPage() {
           <aside className="sidebar">
             <h3>Representative</h3>
             <div className="side-nav">
-              <NavLink to="/tenant-dashboard" className="side-link active">Dashboard</NavLink>
+              <NavLink to="/representative/dashboard" end className={({ isActive }) => `side-link${isActive ? ' active' : ''}`}>Dashboard</NavLink>
               <NavLink to="/my-properties" className="side-link">My Properties</NavLink>
               <NavLink to="/add-property" className="side-link">Add Property</NavLink>
               <NavLink to="/leads" className="side-link">Retailer Requests</NavLink>
               <NavLink to="/profile" className="side-link">Profile</NavLink>
+              <LogoutButton />
             </div>
           </aside>
 
@@ -8778,9 +9541,19 @@ function RepresentativeDashboardPage() {
             </div>
 
             {isLoading && <p role="status">Loading your properties and contact requests...</p>}
-            {errorMessage && <p className="auth-feedback auth-feedback-error" role="alert">{errorMessage} <Link to="/login">Sign in</Link></p>}
+            {errorMessage && (
+              <div className="auth-feedback auth-feedback-error" role="alert">
+                <p>{errorMessage}</p>
+                <button className="btn btn-secondary" type="button" onClick={() => {
+                  setErrorMessage('');
+                  setIsLoading(true);
+                  setIsAuthorized(false);
+                  setRetryCount((count) => count + 1);
+                }}>Retry</button>
+              </div>
+            )}
 
-            <div className="stats-row">
+            {!isLoading && !errorMessage && <div className="stats-row">
               <div className="stat-card">
                 <span>Published Properties</span>
                 <strong>{properties.length}</strong>
@@ -8801,9 +9574,9 @@ function RepresentativeDashboardPage() {
                 <strong>{completedRequests}</strong>
                 <small>Marked completed</small>
               </div>
-            </div>
+            </div>}
 
-            <div className="two-col">
+            {!isLoading && !errorMessage && <div className="two-col">
               <div className="feature-card">
                 <div className="section-header" style={{ marginBottom: 14 }}>
                   <h3 style={{ margin: 0 }}>Recent leads</h3>
@@ -8830,7 +9603,7 @@ function RepresentativeDashboardPage() {
                 <p>Publish accurate commercial property details so retailers can discover your listings and send you a contact request.</p>
                 <Link to="/add-property" className="btn btn-primary">Add a property</Link>
               </div>
-            </div>
+            </div>}
           </main>
         </div>
       </div>
@@ -8936,10 +9709,9 @@ function AddPropertyPage() {
               <div className="field">
                 <label>Property Type</label>
                 <select name="propertyType" value={formValues.propertyType} onChange={updateField}>
-                  <option>Retail</option>
-                  <option>Industrial</option>
-                  <option>Office</option>
-                  <option>Shopping Center</option>
+                  {PROPERTY_CATEGORIES.filter((category) => category !== 'All').map((category) => (
+                    <option key={category}>{category}</option>
+                  ))}
                 </select>
               </div>
               <div className="field">
@@ -9130,7 +9902,46 @@ function LeadsPage() {
   );
 }
 
+function setMetaContent(attribute, key, content) {
+  let meta = document.head.querySelector(`meta[${attribute}="${key}"]`);
+  if (!meta) {
+    meta = document.createElement('meta');
+    meta.setAttribute(attribute, key);
+    document.head.append(meta);
+  }
+  meta.setAttribute('content', content);
+}
+
+function setPageMetadata(title, description) {
+  document.title = title;
+  setMetaContent('name', 'description', description);
+  setMetaContent('property', 'og:title', title);
+  setMetaContent('property', 'og:description', description);
+  setMetaContent('property', 'og:type', 'website');
+  setMetaContent('property', 'og:url', window.location.href);
+  setMetaContent('name', 'twitter:card', 'summary_large_image');
+  setMetaContent('name', 'twitter:title', title);
+  setMetaContent('name', 'twitter:description', description);
+}
+
+function NotFoundPage() {
+  return (
+    <main className="page">
+      <div className="container not-found-state">
+        <p className="eyebrow">Page not found</p>
+        <h1>We couldn't find that page.</h1>
+        <p>The address may have changed, or the page may no longer be available.</p>
+        <div>
+          <Link className="btn btn-primary" to="/">Go to Home</Link>
+          <Link className="btn btn-secondary" to="/properties">Browse properties</Link>
+        </div>
+      </div>
+    </main>
+  );
+}
+
 function App() {
+  const location = useLocation();
   const [backendStatus, setBackendStatus] = useState("Checking...");
 
   useEffect(() => {
@@ -9138,6 +9949,31 @@ function App() {
       .then(() => setBackendStatus("Backend Connected"))
       .catch(() => setBackendStatus("Backend Disconnected"));
   }, []);
+
+  useEffect(() => {
+    const path = location.pathname.replace(/\/+$/, '') || '/';
+    const metadata = {
+      '/': ['Locentra | Commercial Real Estate Site Selection', 'Discover commercial properties, compare locations, and connect with tenant representatives on Locentra.'],
+      '/how-it-works': ['How Locentra Works', 'Learn how Locentra helps businesses describe their location needs, explore commercial properties, and connect with representatives.'],
+      '/about': ['About Locentra', 'Learn about Locentra’s commercial property discovery and site-selection platform.'],
+      '/properties': ['Properties | Locentra', 'Search commercial property listings by name, location, city, or category. Compare rent and area details on Locentra.'],
+      '/login': ['Sign In | Locentra', 'Sign in to manage your commercial property search, saved listings, and requirements on Locentra.'],
+      '/register': ['Create an Account | Locentra', 'Create a Locentra account to discover commercial properties or connect businesses with suitable locations.'],
+      '/retailer-dashboard': ['Retailer Dashboard | Locentra', 'Review your requirements, matched commercial properties, saved listings, and contact requests on Locentra.'],
+      '/create-requirement': ['Create a Requirement | Locentra', 'Save your business location, property type, size, and budget preferences to discover relevant commercial properties.'],
+      '/saved': ['Saved Properties | Locentra', 'Review commercial properties you have saved for your site-selection search.'],
+      '/contact-requests': ['Contact Requests | Locentra', 'Review the contact requests you have sent to commercial property representatives.'],
+      '/profile': ['Your Profile | Locentra', 'Review your Locentra account profile and role.'],
+      '/representative/dashboard': ['Representative Dashboard | Locentra', 'Manage your commercial property listings, retailer requests, and recent leads on Locentra.'],
+      '/my-properties': ['My Properties | Locentra', 'Review the commercial properties you have published on Locentra.'],
+      '/add-property': ['Add a Property | Locentra', 'Publish a commercial property listing with its location, category, size, and rent details.'],
+      '/leads': ['Retailer Requests | Locentra', 'Review incoming retailer contact requests for your commercial property listings.'],
+    };
+    const [title, description] = path.startsWith('/properties/')
+      ? ['Property Details | Locentra', 'Review commercial property details, location, size, and rent, and connect with its representative on Locentra.']
+      : metadata[path] || ['Page Not Found | Locentra', 'The page you requested could not be found. Browse commercial property listings on Locentra.'];
+    setPageMetadata(title, description);
+  }, [location.pathname]);
 
   return (
     <div className="locentra-app">
@@ -9173,15 +10009,17 @@ function App() {
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/properties" element={<PropertiesPage />} />
         <Route path="/properties/:id" element={<PropertyDetailsPage />} />
-        <Route path="/retailer-dashboard" element={<RetailerDashboardPage />} />
-        <Route path="/create-requirement" element={<CreateRequirementPage />} />
-        <Route path="/saved" element={<SavedPropertiesPage />} />
-        <Route path="/contact-requests" element={<ContactRequestsPage />} />
-        <Route path="/profile" element={<ProfilePage />} />
-        <Route path="/tenant-dashboard" element={<RepresentativeDashboardPage />} />
-        <Route path="/add-property" element={<AddPropertyPage />} />
-        <Route path="/my-properties" element={<MyPropertiesPage />} />
-        <Route path="/leads" element={<LeadsPage />} />
+        <Route path="/retailer-dashboard" element={<RequireRole roles={['retailer']}><RetailerDashboardPage /></RequireRole>} />
+        <Route path="/create-requirement" element={<RequireRole roles={['retailer']}><CreateRequirementPage /></RequireRole>} />
+        <Route path="/saved" element={<RequireRole roles={['retailer']}><SavedPropertiesPage /></RequireRole>} />
+        <Route path="/contact-requests" element={<RequireRole roles={['retailer']}><ContactRequestsPage /></RequireRole>} />
+        <Route path="/profile" element={<RequireRole roles={['retailer', 'tenantRepresentative']}><ProfilePage /></RequireRole>} />
+        <Route path="/representative/dashboard" element={<RequireRole roles={['tenantRepresentative']}><RepresentativeDashboardPage /></RequireRole>} />
+        <Route path="/tenant-dashboard" element={<Navigate to="/representative/dashboard" replace />} />
+        <Route path="/add-property" element={<RequireRole roles={['tenantRepresentative']}><AddPropertyPage /></RequireRole>} />
+        <Route path="/my-properties" element={<RequireRole roles={['tenantRepresentative']}><MyPropertiesPage /></RequireRole>} />
+        <Route path="/leads" element={<RequireRole roles={['tenantRepresentative']}><LeadsPage /></RequireRole>} />
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
 
       <footer className="footer">

@@ -22,10 +22,14 @@ function validEmail(email) {
 }
 
 async function register(req, res, next) {
-  const { name, email, password, role } = req.body || {};
+  const { name, company, phone, email, password, role } = req.body || {};
   if (
     typeof name !== "string" ||
     !name.trim() ||
+    typeof company !== "string" ||
+    !company.trim() ||
+    typeof phone !== "string" ||
+    !phone.trim() ||
     typeof email !== "string" ||
     !email.trim() ||
     typeof password !== "string" ||
@@ -35,7 +39,7 @@ async function register(req, res, next) {
   ) {
     return res.status(400).json({
       success: false,
-      message: "Name, email, password, and role are required.",
+      message: "Name, company, phone, email, password, and role are required.",
     });
   }
 
@@ -62,6 +66,8 @@ async function register(req, res, next) {
     const hashedPassword = await bcrypt.hash(password, passwordSaltRounds);
     const user = await User.create({
       name: name.trim(),
+      company: company.trim(),
+      phone: phone.trim(),
       email: normalizedEmail,
       password: hashedPassword,
       role,

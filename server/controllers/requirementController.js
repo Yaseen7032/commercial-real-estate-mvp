@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 const Property = require("../models/Property");
 const Requirement = require("../models/Requirement");
 
-const propertyTypes = new Set(["Retail", "Office", "Industrial", "Warehouse", "Land", "Mixed Use", "Other"]);
+const propertyTypes = new Set(Property.schema.path("propertyType").enumValues);
 const footTrafficLevels = new Set(["Low", "Medium", "High"]);
 
 function parseRangeValue(value, fieldName) {
@@ -50,53 +50,140 @@ function validateRequirement(body) {
 }
 
 function normalizePropertyType(value) {
-  const normalized = value.trim().toLowerCase();
-  return normalized === "industrial" || normalized === "warehouse" ? "industrial" : normalized;
+  return value.trim().toLowerCase().replace(/\s+/g, "");
 }
 
-function scoreRange(value, minimum, maximum) {
-  if (value >= minimum && value <= maximum) return 1;
-  const distance = value < minimum ? minimum - value : value - maximum;
-  return Math.max(0, 1 - distance / Math.max(maximum - minimum, 1));
+function compareRange(value, minimum, maximum) {
+  const propertyValue = value === null || value === undefined || value === ""
+    ? Number.NaN
+    : Number(value);
+  const min = minimum === null || minimum === undefined || minimum === ""
+    ? Number.NaN
+    : Number(minimum);
+  const max = maximum === null || maximum === undefined || maximum === ""
+    ? Number.NaN
+    : Number(maximum);
+
+  if (!Number.isFinite(propertyValue) || (!Number.isFinite(min) && !Number.isFinite(max))) {
+    return null;
+  }
+  return (!Number.isFinite(min) || propertyValue >= min)
+    && (!Number.isFinite(max) || propertyValue <= max);
 }
 
-function scoreProperty(requirement, property) {
+function prepareRequirementForMatching(requirement) {
+  return {
+    ...requirement,
+    locationTerms: (requirement.preferredLocation || "")
+      .split(",")
+      .map((term) => term.trim().toLowerCase())
+      .filter(Boolean),
+    normalizedPropertyType: typeof requirement.propertyType === "string"
+      ? normalizePropertyType(requirement.propertyType)
+      : "",
+  };
+}
+
+function preparePropertiesForMatching(properties) {
+  return properties.map((property) => {
+    const propertyLocation = [property.city, property.location]
+      .filter((value) => typeof value === "string" && value.trim())
+      .join(" ")
+      .toLowerCase();
+    return {
+      property,
+      propertyLocation,
+      normalizedPropertyType: typeof property.propertyType === "string"
+        ? normalizePropertyType(property.propertyType)
+        : "",
+    };
+  });
+}
+
+function scoreProperty(requirement, preparedProperty, includeReasons = true) {
+  const { property, propertyLocation, normalizedPropertyType } = preparedProperty;
+  const matchedLocations = requirement.locationTerms.filter((term) => propertyLocation.includes(term));
+  const hasLocationData = Boolean(propertyLocation && requirement.locationTerms.length);
+  const hasPropertyType = Boolean(normalizedPropertyType && requirement.normalizedPropertyType);
+  const budgetComparison = compareRange(
+    property.monthlyRent,
+    requirement.minBudget,
+    requirement.maxBudget
+  );
+  const areaComparison = compareRange(
+    property.areaSqFt,
+    requirement.minAreaSqFt,
+    requirement.maxAreaSqFt
+  );
+
+  if (
+    (hasLocationData && matchedLocations.length === 0)
+    || (hasPropertyType && normalizedPropertyType !== requirement.normalizedPropertyType)
+    || budgetComparison === false
+    || areaComparison === false
+  ) {
+    return null;
+  }
+
   let score = 0;
-  const reasons = [];
-  const locationTerms = requirement.preferredLocation
-    .split(",")
-    .map((term) => term.trim().toLowerCase())
-    .filter(Boolean);
-  const propertyLocation = `${property.city} ${property.location}`.toLowerCase();
-  const matchedLocations = locationTerms.filter((term) => propertyLocation.includes(term));
-  const locationScore = locationTerms.length ? matchedLocations.length / locationTerms.length : 0;
-  score += 30 * locationScore;
-  if (matchedLocations.length) reasons.push(`Location matches ${matchedLocations.join(", ")}.`);
+  let maximumScore = 0;
+  const reasons = includeReasons ? [] : null;
+  if (hasLocationData) {
+    maximumScore += 30;
+    score += 30 * (matchedLocations.length / requirement.locationTerms.length);
+    if (reasons) reasons.push(`Location matches ${matchedLocations.join(", ")}.`);
+  }
 
-  const budgetScore = scoreRange(property.monthlyRent, requirement.minBudget, requirement.maxBudget);
-  score += 25 * budgetScore;
-  if (budgetScore === 1) reasons.push("Monthly rent is within your budget.");
-  else if (budgetScore > 0) reasons.push("Monthly rent is close to your budget.");
+  if (budgetComparison !== null) {
+    maximumScore += 25;
+    score += 25;
+    if (reasons) reasons.push("Monthly rent is within your budget.");
+  }
 
-  const areaScore = scoreRange(property.areaSqFt, requirement.minAreaSqFt, requirement.maxAreaSqFt);
-  score += 20 * areaScore;
-  if (areaScore === 1) reasons.push("Property size is within your preferred range.");
-  else if (areaScore > 0) reasons.push("Property size is close to your preferred range.");
+  if (areaComparison !== null) {
+    maximumScore += 20;
+    score += 20;
+    if (reasons) reasons.push("Property size is within your preferred range.");
+  }
 
-  if (normalizePropertyType(property.propertyType) === normalizePropertyType(requirement.propertyType)) {
+  if (hasPropertyType) {
+    maximumScore += 10;
     score += 10;
-    reasons.push("Property type matches your requirement.");
+    if (reasons) reasons.push("Property type matches your requirement.");
   }
-  if (property.footTraffic === requirement.preferredFootTraffic) {
-    score += 10;
-    reasons.push(`${property.footTraffic} foot traffic matches your preference.`);
+  if (["Low", "Medium", "High"].includes(property.footTraffic)) {
+    maximumScore += 10;
+    if (property.footTraffic === requirement.preferredFootTraffic) {
+      score += 10;
+      if (reasons) reasons.push(`${property.footTraffic} foot traffic matches your preference.`);
+    } else if (reasons) {
+      reasons.push("Foot traffic does not match your preference.");
+    }
   }
-  if (!requirement.parkingRequired || property.parking) {
-    score += 5;
-    if (requirement.parkingRequired) reasons.push("Parking is available.");
+  if (typeof property.parking === "boolean") {
+    maximumScore += 5;
+    if (!requirement.parkingRequired || property.parking) {
+      score += 5;
+      if (reasons && requirement.parkingRequired) reasons.push("Parking is available.");
+    } else if (reasons) {
+      reasons.push("Parking is not available.");
+    }
   }
 
-  return { matchScore: Math.round(score), matchingReasons: reasons };
+  const match = { matchScore: maximumScore ? Math.round((score / maximumScore) * 100) : 0 };
+  if (reasons) match.matchingReasons = reasons;
+  return match;
+}
+
+function findRequirementMatches(requirement, preparedProperties) {
+  const preparedRequirement = prepareRequirementForMatching(requirement);
+  return preparedProperties
+    .map((preparedProperty) => {
+      const match = scoreProperty(preparedRequirement, preparedProperty);
+      return match ? { property: preparedProperty.property, ...match } : null;
+    })
+    .filter(Boolean)
+    .sort((left, right) => right.matchScore - left.matchScore);
 }
 
 async function createRequirement(req, res, next) {
@@ -152,10 +239,10 @@ async function getRequirementMatches(req, res, next) {
     }
 
     const properties = await Property.find({}).lean();
-    const matches = properties
-      .map((property) => ({ property, ...scoreProperty(requirement, property) }))
-      .filter((match) => match.matchScore > 0)
-      .sort((left, right) => right.matchScore - left.matchScore);
+    const matches = findRequirementMatches(
+      requirement,
+      preparePropertiesForMatching(properties)
+    );
 
     return res.json({
       success: true,
@@ -168,4 +255,75 @@ async function getRequirementMatches(req, res, next) {
   }
 }
 
-module.exports = { createRequirement, getRequirementMatches, getRequirements };
+async function getRequirementMatchesSummary(req, res, next) {
+  const selectedRequirementId = req.query.selectedRequirementId;
+  if (selectedRequirementId && !mongoose.isValidObjectId(selectedRequirementId)) {
+    return res.status(400).json({ success: false, message: "Invalid requirement ID." });
+  }
+
+  try {
+    const requirements = await Requirement.find({ retailer: req.user.id })
+      .select("_id businessName preferredLocation propertyType minBudget maxBudget minAreaSqFt maxAreaSqFt parkingRequired preferredFootTraffic status createdAt")
+      .sort({ createdAt: -1 })
+      .lean();
+    const selectedRequirement = selectedRequirementId
+      ? requirements.find((requirement) => String(requirement._id) === selectedRequirementId)
+      : requirements[0];
+    if (selectedRequirementId && !selectedRequirement) {
+      return res.status(404).json({ success: false, message: "Requirement not found." });
+    }
+    if (!selectedRequirement) {
+      return res.json({
+        success: true,
+        requirements,
+        matches: [],
+        matchCount: 0,
+      });
+    }
+
+    const properties = await Property.find({})
+      .select("_id title propertyType location city monthlyRent areaSqFt parking footTraffic description")
+      .lean();
+    const preparedProperties = preparePropertiesForMatching(properties);
+    const matchedPropertyIndexes = new Uint8Array(preparedProperties.length);
+    let selectedMatches = [];
+
+    for (const requirement of requirements) {
+      const preparedRequirement = prepareRequirementForMatching(requirement);
+      const isSelectedRequirement = requirement === selectedRequirement;
+      for (let index = 0; index < preparedProperties.length; index += 1) {
+        const preparedProperty = preparedProperties[index];
+        const match = scoreProperty(
+          preparedRequirement,
+          preparedProperty,
+          isSelectedRequirement
+        );
+        if (!match || match.matchScore === 0) continue;
+
+        matchedPropertyIndexes[index] = 1;
+        if (isSelectedRequirement) {
+          selectedMatches.push({ property: preparedProperty.property, ...match });
+        }
+      }
+    }
+    selectedMatches.sort((left, right) => right.matchScore - left.matchScore);
+    let matchCount = 0;
+    for (const isMatched of matchedPropertyIndexes) matchCount += isMatched;
+
+    return res.json({
+      success: true,
+      requirements,
+      matches: selectedMatches,
+      matchCount,
+    });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+module.exports = {
+  createRequirement,
+  getRequirementMatches,
+  getRequirementMatchesSummary,
+  getRequirements,
+};

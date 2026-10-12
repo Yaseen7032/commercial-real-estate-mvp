@@ -1,8 +1,10 @@
 
+
 const API_BASE_URL = (
   import.meta.env.VITE_API_URL ||
-  "https://commercial-real-estate-mvp.onrender.com"
+  "http://localhost:5000"
 ).replace(/\/+$/, "");
+
 
 export async function checkBackendHealth() {
   const response = await fetch(`${API_BASE_URL}/api/health`);
@@ -70,6 +72,33 @@ function getStoredToken() {
   }
 }
 
+export function getAuthenticatedRole() {
+  const storedSessions = [
+    window.localStorage.getItem("locentraAuth"),
+    window.sessionStorage.getItem("locentraAuth"),
+  ];
+
+  for (const storedSession of storedSessions) {
+    if (!storedSession) continue;
+    try {
+      const { token, user } = JSON.parse(storedSession);
+      if (token && ["retailer", "tenantRepresentative"].includes(user?.role)) {
+        return user.role;
+      }
+    } catch {
+      continue;
+    }
+  }
+
+  return null;
+}
+
+export function clearAuthentication() {
+  window.localStorage.removeItem("locentraAuth");
+  window.sessionStorage.removeItem("locentraAuth");
+  window.dispatchEvent(new Event("locentra-auth-change"));
+}
+
 async function requestAuthenticatedApi(path, options = {}) {
   const token = getStoredToken();
   let response;
@@ -113,6 +142,13 @@ export function getRequirementMatches(requirementId) {
   return requestAuthenticatedApi(
     `requirements/${encodeURIComponent(requirementId)}/matches`
   );
+}
+
+export function getRequirementMatchesSummary(requirementId = null) {
+  const query = requirementId
+    ? `?selectedRequirementId=${encodeURIComponent(requirementId)}`
+    : "";
+  return requestAuthenticatedApi(`requirements/matches${query}`);
 }
 
 export async function getProperties(type = "All") {

@@ -79,4 +79,6 @@ const requirementSchema = new mongoose.Schema(
   }
 );
 
+requirementSchema.index({ retailer: 1, createdAt: -1 });
+
 module.exports = mongoose.model("Requirement", requirementSchema);

@@ -4,12 +4,32 @@ const Property = require("../models/Property");
 async function getProperties(req, res, next) {
   try {
     const query = {};
-    if (req.query.type && req.query.type !== "All") query.propertyType = req.query.type;
-    const properties = await Property.find(query)
-      .populate("representative", "name email role")
-      .sort({ createdAt: -1 })
-      .lean();
-    return res.json({ success: true, properties });
+    const requestedValue = String(req.query.type || "").trim();
+    if (requestedValue && requestedValue.toLowerCase() !== "all") {
+      const requestedType = requestedValue.toLowerCase().replace(/\s+/g, "");
+      const propertyType = Property.schema.path("propertyType").enumValues.find(
+        (type) => type.toLowerCase().replace(/\s+/g, "") === requestedType
+      );
+
+      if (!propertyType) {
+        return res.status(400).json({ success: false, message: "Choose a valid property category." });
+      }
+
+      const typePattern = propertyType
+        .split(/\s+/)
+        .map((part) => part.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+        .join("\\s*");
+      query.propertyType = new RegExp(`^${typePattern}$`, "i");
+    }
+
+    const [properties, totalCount] = await Promise.all([
+      Property.find(query)
+        .populate("representative", "name email role")
+        .sort({ createdAt: -1 })
+        .lean(),
+      Property.countDocuments(query),
+    ]);
+    return res.json({ success: true, properties, totalCount });
   } catch (error) {
     return next(error);
   }

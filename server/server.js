@@ -1,6 +1,12 @@
+const dns = require("dns");
+
+dns.setDefaultResultOrder("ipv4first");
+
+require("dotenv").config();
+
 const express = require("express");
 const cors = require("cors");
-require("dotenv").config();
+
 
 const connectDB = require("./config/db");
 const { migrateLegacyPasswords } = require("./controllers/authController");
