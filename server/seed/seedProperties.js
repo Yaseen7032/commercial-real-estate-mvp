@@ -8,6 +8,7 @@ require("dotenv").config({ path: path.resolve(__dirname, "..", ".env") });
 const connectDB = require("../config/db");
 const Property = require("../models/Property");
 const User = require("../models/User");
+const getSeedEnvironmentError = require("./seedEnvironment");
 
 const samplePassword = "LocentraDemo-2026!";
 const representatives = [
@@ -434,6 +435,13 @@ async function seedProperties(users) {
 }
 
 async function main() {
+  const refusalReason = getSeedEnvironmentError(process.env);
+  if (refusalReason) {
+    console.error(`Property seed refused: ${refusalReason}`);
+    process.exitCode = 1;
+    return;
+  }
+
   try {
     await connectDB();
     console.log("Connected to MongoDB");
@@ -441,7 +449,7 @@ async function main() {
     await seedProperties(users);
     console.log("Seed completed successfully");
   } catch (error) {
-    console.error("Property seed failed:", error);
+    console.error("Property seed failed; details omitted to protect credentials and connection strings.");
     process.exitCode = 1;
   } finally {
     if (mongoose.connection.readyState !== 0) {
@@ -449,7 +457,7 @@ async function main() {
         await mongoose.disconnect();
         console.log("MongoDB connection closed");
       } catch (error) {
-        console.error("Failed to close MongoDB connection:", error);
+        console.error("Failed to close MongoDB connection; details omitted.");
         process.exitCode = 1;
       }
     }
